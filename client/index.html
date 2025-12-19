@@ -4,27 +4,40 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>3 en línea</title>
+
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <div class="wrap">
-    <h1>3 en línea 🎮</h1>
+    <header class="top">
+      <h1>3 en línea <span class="emoji">🎮</span></h1>
+      <p class="sub">Multijugador online (2 jugadores) • Render</p>
+    </header>
 
-    <div class="controls">
-      <button id="join">Entrar a jugar</button>
-      <button id="reload" title="Vuelve a empezar">Reiniciar</button>
+    <div class="panel">
+      <div class="controls">
+        <button id="join">Entrar a jugar</button>
+        <button id="reload" title="Reiniciar">Reiniciar</button>
+      </div>
+
+      <div id="status" class="status">
+        Abriendo conexión… (si Render estaba “dormido”, espera 20–60s)
+      </div>
     </div>
 
-    <p id="status" class="status">Presiona “Entrar a jugar”.</p>
-
-    <div id="board" class="board"></div>
+    <div class="boardWrap">
+      <div id="board" class="board" aria-label="Tablero 3 en línea"></div>
+    </div>
 
     <p class="hint">
-      Tip: abre esta página en <b>dos pestañas</b> (o una pestaña + incógnito) para simular 2 jugadores.
+      Tip: abre este link en <b>dos pestañas</b> (o una pestaña + incógnito) para simular 2 jugadores.
     </p>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="main.js"></script>
+  <!-- Socket.IO desde CDN (más estable en Render Free) -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+  <!-- Tu JS -->
+  <script src="/main.js" defer></script>
 </body>
 </html>
