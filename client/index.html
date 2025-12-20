@@ -18,24 +18,21 @@
         <button id="reload" title="Reiniciar">Reiniciar</button>
       </div>
 
-      <div id="status" class="status">
-        Abriendo conexión… (si Render estaba “dormido”, espera 20–60s)
-      </div>
+      <!-- ✅ SOLO UN status, sin textos de “abriendo conexión” -->
+      <div id="status" class="status">Presiona “Entrar a jugar”.</div>
     </div>
 
     <div class="game">
       <div class="left">
-        <p id="status" class="status">Presiona “Entrar a jugar”.</p>
         <div id="board" class="board"></div>
       </div>
 
       <div class="chat">
-
         <div class="chatHeader" id="chatHandle">
           <span>Chat</span>
-            <div class="chatHeaderBtns">
-                <button id="chatToggle" type="button" class="miniBtn" title="Poner chat flotante / acoplar">📌</button>
-            </div>
+          <div class="chatHeaderBtns">
+            <button id="chatToggle" type="button" class="miniBtn" title="Poner chat flotante / acoplar">📌</button>
+          </div>
         </div>
 
         <div id="chatMessages" class="chatMessages" aria-live="polite"></div>
