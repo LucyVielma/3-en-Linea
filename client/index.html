@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>3 en línea</title>
+
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
@@ -11,9 +12,15 @@
     <h1>3 en línea 🎮</h1>
     <p class="sub">Juega online en tiempo real (2 jugadores).</p>
 
-    <div class="controls">
-      <button id="join">Entrar a jugar</button>
-      <button id="reload" title="Vuelve a empezar">Reiniciar</button>
+    <div class="panel">
+      <div class="controls">
+        <button id="join">Entrar a jugar</button>
+        <button id="reload" title="Reiniciar">Reiniciar</button>
+      </div>
+
+      <div id="status" class="status">
+        Abriendo conexión… (si Render estaba “dormido”, espera 20–60s)
+      </div>
     </div>
 
     <div class="game">
@@ -45,7 +52,7 @@
     </div>
 
     <p class="hint">
-      Tip: abre esta página en <b>dos pestañas</b> (o una pestaña + incógnito) para simular 2 jugadores.
+      Tip: abre este link en <b>dos pestañas</b> (o una pestaña + incógnito) para simular 2 jugadores.
     </p>
   </div>
 

@@ -1,13 +1,18 @@
-const socket = io();
+// Si por alguna razón el CDN no cargó, avisamos
+if (typeof io === "undefined") {
+  alert("No cargó Socket.IO 😅. Recarga con Ctrl+F5.");
+}
+
+let socket = null;
 
 let mySymbol = null; // 'X' o 'O'
 let myName = null;
 let state = null;
 
-const statusEl = document.getElementById('status');
-const joinBtn = document.getElementById('join');
-const reloadBtn = document.getElementById('reload');
-const boardEl = document.getElementById('board');
+const statusEl = document.getElementById("status");
+const joinBtn = document.getElementById("join");
+const reloadBtn = document.getElementById("reload");
+const boardEl = document.getElementById("board");
 
 // Chat elements
 const chatMessagesEl = document.getElementById('chatMessages');
@@ -24,10 +29,10 @@ for (let i = 0; i < 9; i++) {
   btn.addEventListener('click', () => {
     if (!state) return;
     if (!mySymbol) return;
-    if (state.status !== 'playing') return;
+    if (state.status !== "playing") return;
     if (state.turn !== mySymbol) return;
 
-    socket.emit('move', { index: i });
+    socket.emit("move", { index: i });
   });
 
   boardEl.appendChild(btn);
@@ -48,7 +53,7 @@ joinBtn.addEventListener('click', () => {
   socket.emit('join', { name: myName });
 });
 
-reloadBtn.addEventListener('click', () => location.reload());
+reloadBtn.addEventListener("click", () => location.reload());
 
 // ===== Chat enviar =====
 chatForm.addEventListener('submit', (e) => {
@@ -71,10 +76,14 @@ socket.on('assigned', (data) => {
   setChatEnabled(true);
 });
 
-socket.on('state', (newState) => {
-  state = newState;
-  render();
-});
+  socket = io({
+    transports: ["websocket", "polling"],
+    timeout: 20000,
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 800,
+    reconnectionDelayMax: 3000,
+  });
 
 socket.on('game_over', ({ winner }) => {
   if (winner === null) {
