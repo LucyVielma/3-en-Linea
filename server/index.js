@@ -5,16 +5,55 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
+
+// Socket.IO
 const io = new Server(server);
 
 // Servimos los archivos del cliente (HTML/CSS/JS)
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
-let waitingSocket = null; // aquí guardamos a la persona que está esperando rival
-const rooms = new Map();  // roomId -> estado del juego
+let waitingSocket = null;
+const rooms = new Map(); // roomId -> room
 
+// ===== Chat settings =====
+const MAX_CHAT_MESSAGES = 25;
+const MAX_CHAT_TEXT = 200;
+const CHAT_COOLDOWN_MS = 700;
+
+// ===== Helpers =====
 function makeRoomId() {
   return Math.random().toString(36).slice(2, 8);
+}
+
+function cleanName(raw) {
+  const name = (raw ?? '').toString().trim().slice(0, 20);
+  return name || 'Jugador';
+}
+
+function cleanText(raw) {
+  const txt = (raw ?? '').toString().trim().replace(/\s+/g, ' ');
+  return txt.slice(0, MAX_CHAT_TEXT);
+}
+
+function pushChat(room, msg) {
+  room.chat.push(msg);
+  if (room.chat.length > MAX_CHAT_MESSAGES) {
+    room.chat.splice(0, room.chat.length - MAX_CHAT_MESSAGES);
+  }
+}
+
+function sendSystem(roomId, text) {
+  const room = rooms.get(roomId);
+  if (!room) return;
+
+  const msg = {
+    kind: 'system',
+    text,
+    ts: Date.now(),
+  };
+
+  pushChat(room, msg);
+  io.to(roomId).emit('chat_message', msg);
 }
 
 function checkWinner(board) {
@@ -26,14 +65,13 @@ function checkWinner(board) {
 
   for (const [a, b, c] of lines) {
     if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-      return board[a]; // 'X' o 'O'
+      return board[a];
     }
   }
   return null;
 }
 
 function publicState(room) {
-  // mandamos solo lo necesario (sin IDs)
   return {
     board: room.board,
     turn: room.turn,
@@ -43,11 +81,13 @@ function publicState(room) {
 }
 
 io.on('connection', (socket) => {
-  // 1) Cuando el jugador quiere entrar a jugar
-  socket.on('join', () => {
-    if (socket.data.roomId) return; // ya está en una partida
+  // ===== JOIN GAME =====
+  socket.on('join', (payload) => {
+    if (socket.data.roomId) return;
 
-    // Si hay alguien esperando, emparejamos
+    socket.data.name = cleanName(payload?.name);
+
+    // Si ya hay alguien esperando, emparejamos
     if (waitingSocket && waitingSocket.connected && waitingSocket.id !== socket.id) {
       const roomId = makeRoomId();
 
@@ -57,37 +97,46 @@ io.on('connection', (socket) => {
         status: 'playing',
         winner: null,
         players: { X: waitingSocket.id, O: socket.id },
+        names: {
+          X: waitingSocket.data.name || 'Jugador',
+          O: socket.data.name || 'Jugador',
+        },
+        chat: [],
       };
 
       rooms.set(roomId, room);
 
-      // metemos a ambos en la misma sala
       waitingSocket.join(roomId);
       socket.join(roomId);
 
-      // guardamos datos en cada jugador
       waitingSocket.data.roomId = roomId;
       waitingSocket.data.symbol = 'X';
+
       socket.data.roomId = roomId;
       socket.data.symbol = 'O';
 
-      // avisamos a cada uno su símbolo
       waitingSocket.emit('assigned', { symbol: 'X' });
       socket.emit('assigned', { symbol: 'O' });
 
-      // mandamos el estado inicial a los dos
+      // Estado inicial
       io.to(roomId).emit('state', publicState(room));
 
-      // ya no hay nadie esperando
+      // Historial inicial (vacío pero ya listo)
+      io.to(roomId).emit('chat_history', room.chat);
+
+      // Mensajitos del sistema
+      sendSystem(roomId, `${room.names.X} (X) se unió a la partida.`);
+      sendSystem(roomId, `${room.names.O} (O) se unió a la partida.`);
+      sendSystem(roomId, `¡Empieza el juego! Turno: X`);
+
       waitingSocket = null;
     } else {
-      // Si no hay rival, queda esperando
       waitingSocket = socket;
       socket.emit('waiting', { message: 'Esperando a otro jugador...' });
     }
   });
 
-  // 2) Cuando alguien intenta jugar un movimiento
+  // ===== MOVES =====
   socket.on('move', ({ index }) => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
@@ -97,40 +146,75 @@ io.on('connection', (socket) => {
 
     const symbol = socket.data.symbol;
 
-    // El servidor valida TODO (importantísimo)
-    if (symbol !== room.turn) return; // no es tu turno
+    if (symbol !== room.turn) return;
     if (typeof index !== 'number' || index < 0 || index > 8) return;
-    if (room.board[index] !== '') return; // casilla ocupada
+    if (room.board[index] !== '') return;
 
-    // Aplicamos la jugada
     room.board[index] = symbol;
 
-    // ¿Ganó alguien?
     const winner = checkWinner(room.board);
     if (winner) {
       room.status = 'ended';
       room.winner = winner;
+
       io.to(roomId).emit('state', publicState(room));
       io.to(roomId).emit('game_over', { winner });
+
+      sendSystem(roomId, `🏁 Fin del juego. Ganó: ${winner}`);
       return;
     }
 
-    // ¿Empate?
     const full = room.board.every((c) => c !== '');
     if (full) {
       room.status = 'ended';
       room.winner = null;
+
       io.to(roomId).emit('state', publicState(room));
       io.to(roomId).emit('game_over', { winner: null });
+
+      sendSystem(roomId, `🏁 Fin del juego. Empate.`);
       return;
     }
 
-    // Si no terminó, cambiamos turno
     room.turn = room.turn === 'X' ? 'O' : 'X';
     io.to(roomId).emit('state', publicState(room));
+
+    sendSystem(roomId, `Turno: ${room.turn}`);
   });
 
-  // 3) Si alguien se desconecta
+  // ===== CHAT SEND =====
+  socket.on('chat_send', (payload) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+
+    const room = rooms.get(roomId);
+    if (!room) return;
+
+    // anti-spam simple
+    const now = Date.now();
+    const last = socket.data.lastChatTs || 0;
+    if (now - last < CHAT_COOLDOWN_MS) return;
+    socket.data.lastChatTs = now;
+
+    const text = cleanText(payload?.text);
+    if (!text) return;
+
+    const symbol = socket.data.symbol;
+    const name = socket.data.name || 'Jugador';
+
+    const msg = {
+      kind: 'user',
+      text,
+      ts: now,
+      fromSymbol: symbol, // X / O
+      fromName: name,
+    };
+
+    pushChat(room, msg);
+    io.to(roomId).emit('chat_message', msg);
+  });
+
+  // ===== DISCONNECT =====
   socket.on('disconnect', () => {
     if (waitingSocket && waitingSocket.id === socket.id) {
       waitingSocket = null;
@@ -142,17 +226,23 @@ io.on('connection', (socket) => {
     const room = rooms.get(roomId);
     if (!room) return;
 
+    const symbol = socket.data.symbol;
+    const name = socket.data.name || 'Jugador';
+
+    // Avisar al otro
     const otherId = Object.values(room.players).find((id) => id !== socket.id);
     if (otherId) {
       io.to(otherId).emit('opponent_left', {
-        message: 'Tu rival se desconectó. Recarga para volver a jugar.'
+        message: 'Tu rival se desconectó. Recarga para volver a jugar.',
       });
     }
+
+    // Mensaje sistema si todavía existe sala
+    sendSystem(roomId, `⚠️ ${name} (${symbol}) se desconectó.`);
 
     rooms.delete(roomId);
   });
 });
-
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
@@ -160,3 +250,4 @@ server.listen(PORT, () => {
 });
 
 
+//cd..

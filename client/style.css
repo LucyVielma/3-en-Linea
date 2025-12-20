@@ -27,13 +27,14 @@ body{
 }
 
 .wrap{
-  width:min(560px, 92vw);
+  width:min(980px, 92vw);
   padding:20px;
   border-radius:18px;
   background:var(--card);
   border:1px solid rgba(255,255,255,.10);
   box-shadow: 0 18px 50px rgba(0,0,0,.45);
 }
+
 
 h1{
   margin:0;
@@ -135,3 +136,178 @@ button:disabled{
   color: var(--muted);
   font-size: 13px;
 }
+
+/* ===== Layout: tablero + chat ===== */
+
+.game{
+  display:grid;
+  grid-template-columns: 1fr; /* en pantallas pequeñas: chat debajo */
+  gap: 14px;
+}
+
+/* Solo ponemos 2 columnas cuando de verdad cabe */
+@media (min-width: 980px){
+  .game{
+    grid-template-columns: 1fr 340px;
+    align-items:start;
+  }
+}
+
+/* ===== Chat (acoplado por defecto) ===== */
+
+.chat{
+  border-radius: 16px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  /* ✅ tamaño fijo del chat */
+  height: 480px;        /* puedes cambiarlo si quieres */
+  min-height: 480px;
+  max-height: 480px;
+}
+
+
+/* Header del chat (sirve como "agarre" para arrastrar en modo flotante) */
+.chatHeader{
+  padding: 12px 14px;
+  font-weight: 900;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+}
+
+.chatHeaderBtns{
+  display:flex;
+  gap: 8px;
+}
+
+.miniBtn{
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  background: rgba(255,255,255,.12);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,.16);
+}
+
+.miniBtn:hover{
+  background: rgba(255,255,255,.18);
+}
+
+/* Mensajes: ahora crecen solos (no altura fija) */
+
+.chatMessages{
+  padding: 12px;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+
+  /* ✅ aquí es donde crece el contenido */
+  overflow: auto;     /* scroll */
+  flex: 1;
+  min-height: 0;      /* MUY importante para que el scroll funcione */
+}
+
+
+/* Form de enviar */
+.chatForm{
+  display:flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid rgba(255,255,255,.10);
+}
+
+.chatInput{
+  flex:1;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(0,0,0,.18);
+  color: #e8eefc;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.chatInput:disabled{
+  opacity: .6;
+}
+
+.chatSend{
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 900;
+  cursor:pointer;
+}
+
+.chatHint{
+  margin: 0;
+  padding: 0 12px 12px;
+  opacity: .8;
+  font-size: 12px;
+}
+
+/* Mensajes */
+.msg{
+  max-width: 92%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.18);
+  line-height: 1.25;
+}
+
+.msgTop{
+  display:flex;
+  gap: 8px;
+  align-items:baseline;
+  opacity:.9;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.msgText{
+  font-size: 14px;
+}
+
+.msg.mine{
+  margin-left:auto;
+  background: rgba(125,211,252,.12);
+}
+
+.msg.system{
+  max-width: 100%;
+  background: rgba(255,255,255,.06);
+  opacity: .9;
+  font-style: italic;
+}
+
+/* ===== Modo flotante (movible) ===== */
+.chat.floating{
+  position: fixed;
+  left: 24px;
+  top: 120px;
+  width: 340px;
+  height: 480px;
+  z-index: 9999;
+  resize: both;        /* permite cambiar tamaño arrastrando esquina */
+  overflow: hidden;    /* necesario para resize */
+  backdrop-filter: blur(10px);
+}
+
+/* Para que arrastrar sea cómodo */
+.chat.floating .chatHeader{
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.chat.floating .chatHeader:active{
+  cursor: grabbing;
+}
+

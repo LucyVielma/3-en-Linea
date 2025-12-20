@@ -9,15 +9,40 @@
 <body>
   <div class="wrap">
     <h1>3 en línea 🎮</h1>
+    <p class="sub">Juega online en tiempo real (2 jugadores).</p>
 
     <div class="controls">
       <button id="join">Entrar a jugar</button>
       <button id="reload" title="Vuelve a empezar">Reiniciar</button>
     </div>
 
-    <p id="status" class="status">Presiona “Entrar a jugar”.</p>
+    <div class="game">
+      <div class="left">
+        <p id="status" class="status">Presiona “Entrar a jugar”.</p>
+        <div id="board" class="board"></div>
+      </div>
 
-    <div id="board" class="board"></div>
+      <div class="chat">
+
+        <div class="chatHeader" id="chatHandle">
+          <span>Chat</span>
+            <div class="chatHeaderBtns">
+                <button id="chatToggle" type="button" class="miniBtn" title="Poner chat flotante / acoplar">📌</button>
+            </div>
+        </div>
+
+        <div id="chatMessages" class="chatMessages" aria-live="polite"></div>
+
+        <form id="chatForm" class="chatForm" autocomplete="off">
+          <input id="chatInput" class="chatInput" type="text"
+                 placeholder="Escribe un mensaje..."
+                 maxlength="200" disabled />
+          <button id="chatSend" class="chatSend" type="submit" disabled>Enviar</button>
+        </form>
+
+        <p class="chatHint">Se guarda un historial corto (últimos 25 mensajes).</p>
+      </div>
+    </div>
 
     <p class="hint">
       Tip: abre esta página en <b>dos pestañas</b> (o una pestaña + incógnito) para simular 2 jugadores.
@@ -25,6 +50,6 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="main.js"></script>
+  <script src="/main.js"></script>
 </body>
 </html>
